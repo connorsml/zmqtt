@@ -30,11 +30,32 @@
 
 %% interface functions
 -export([
-    init/1
+    init/1, terminate/2
 ]).
 
+%% @spec terminate(Reason, State) -> void()
+%% @doc This function is called by a gen_server when it is about to
+%% terminate. It should be the opposite of Module:init/1 and do any necessary
+%% cleaning up. When it returns, the gen_server terminates with Reason.
+%% The return value is ignored.
+terminate(_Reason, State) ->
+    application:stop(mqtt_broker),
+    ok.
 
 init(Context) ->
-    application:start(mqtt_broker),
+    AllowAnonymous = m_config:get_value(?MODULE, allow_anonymous, false, Context),
+    Username = binary_to_list(m_config:get_value(?MODULE, username, undefined, Context)),
+    Password = binary_to_list(m_config:get_value(?MODULE, password, undefined, Context)),
+    application:load(mqtt_broker),
+    application:set_env(mqtt_broker, allow_anonymous, AllowAnonymous),
+    application:set_env(mqtt_broker, username, Username),
+    application:set_env(mqtt_broker, password, Password),
+    case {AllowAnonymous, Username} of
+        {false, undefined} ->
+            z_session_manager:broadcast(#broadcast{type="error", message="The MQTT broker does not allow anonymous login, but there is no username configured.", title="MQTT", stay=true}, Context);
+        _ ->
+            application:start(mqtt_broker),
+            z_session_manager:broadcast(#broadcast{type="notice", message="The MQTT broker is running.", title="MQTT", stay=false}, Context)
+    end,
     {ok, #state{context=z_context:new(Context)}}.
 
