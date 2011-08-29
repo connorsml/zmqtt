@@ -43,9 +43,9 @@ terminate(_Reason, State) ->
     ok.
 
 init(Context) ->
-    AllowAnonymous = m_config:get_value(?MODULE, allow_anonymous, false, Context),
-    Username = binary_to_list(m_config:get_value(?MODULE, username, undefined, Context)),
-    Password = binary_to_list(m_config:get_value(?MODULE, password, undefined, Context)),
+    AllowAnonymous = z_convert:to_bool(m_config:get_value(?MODULE, allow_anonymous, false, Context)),
+    Username = z_mqtt:get_username(Context),
+    Password = z_mqtt:get_password(Context),
     application:load(mqtt_broker),
     application:set_env(mqtt_broker, allow_anonymous, AllowAnonymous),
     application:set_env(mqtt_broker, username, Username),
