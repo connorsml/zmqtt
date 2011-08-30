@@ -24,6 +24,7 @@
 
 -export([get_username/1,
          get_password/1,
+         get_port/1,
          connect/1,
          connect/2,
          connect/3,
@@ -34,6 +35,12 @@
          publish/5,
          disconnect/2
         ]).
+
+get_port(Context) ->
+    case m_config:get_value('mod_mqtt', port, 1883, Context) of
+        undefined -> undefined;
+        Port -> z_convert:to_integer(Port)
+    end.
 
 get_username(Context) ->
     case m_config:get_value('mod_mqtt', username, undefined, Context) of
@@ -51,22 +58,22 @@ connect(Context) ->
     AllowAnonymous = m_config:get_value(?MODULE, allow_anonymous, false, Context),
     Username = get_username(Context),
     Password = get_password(Context),
+    Port = get_port(Context),
     case {AllowAnonymous, Username, Password} of
-        {true, _, _} -> mqtt_client:connect("127.0.0.1", 1883, [{client_id, z_ids:unique()}]);
-        {false, Username, undefined} -> mqtt_client:connect("127.0.0.1", 1883, [{username, Username}, {client_id, z_ids:unique()}]);
+        {true, _, _} -> mqtt_client:connect("127.0.0.1", Port, [{client_id, z_ids:unique()}]);
+        {false, Username, undefined} -> mqtt_client:connect("127.0.0.1", Port, [{username, Username}, {client_id, z_ids:unique()}]);
         {false, undefined, _Password} -> ?LOG("MQTT Broker username was not set.", []);
-        {false, Username, Password} -> mqtt_client:connect("127.0.0.1", 1883, [{username, Username}, {password, Password}, {client_id, z_ids:unique()}])
+        {false, Username, Password} -> mqtt_client:connect("127.0.0.1", Port, [{username, Username}, {password, Password}, {client_id, z_ids:unique()}])
     end.
 connect(Server, _Context) ->
-    mqtt_client:connect(Server).
+    mqtt_client:connect(Server, 1883, [{client_id, z_ids:unique()}]).
 connect(Server, Args, _Context) ->
-    mqtt_client:connect(Server, 1883, Args).
+    mqtt_client:connect(Server, 1883, Args++[{client_id, z_ids:unique()}]).
 connect(Server, Args, Port, _Context) ->
-    mqtt_client:connect(Server, Port, Args).
+    mqtt_client:connect(Server, Port, Args++[{client_id, z_ids:unique()}]).
 
-subscribe(ClientPid, Topic, Context) ->
+subscribe(ClientPid, Topic, _Context) ->
     mqtt_client:subscribe(ClientPid, Topic).
-    %z_notifier:notify({mqtt_message, ClientPid, mqtt_client:get_message(ClientPid)}, Context).
 
 unsubscribe(ClientPid, Topic, _Context) ->
     mqtt_client:subscribe(ClientPid, Topic).
