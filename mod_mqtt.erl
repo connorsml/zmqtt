@@ -38,7 +38,8 @@
 %% terminate. It should be the opposite of Module:init/1 and do any necessary
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
-terminate(_Reason, State) ->
+terminate(_Reason, Context) ->
+    z_session_manager:broadcast(#broadcast{type="notice", message="Stopping the MQTT broker.", title="MQTT", stay=true}, Context),
     application:stop(mqtt_broker),
     ok.
 

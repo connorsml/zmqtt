@@ -36,13 +36,13 @@
         ]).
 
 get_username(Context) ->
-    case m_config:get_value(?MODULE, username, undefined, Context) of
+    case m_config:get_value('mod_mqtt', username, undefined, Context) of
         undefined -> undefined;
         Username -> binary_to_list(Username)
     end.
 
 get_password(Context) ->
-    case m_config:get_value(?MODULE, password, undefined, Context) of
+    case m_config:get_value('mod_mqtt', password, undefined, Context) of
         undefined -> undefined;
         Password -> binary_to_list(Password)
     end.
