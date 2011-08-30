@@ -40,7 +40,7 @@
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
 terminate(_Reason, #state{context=Context}) ->
-    z_session_manager:broadcast(#broadcast{type="notice", message="Stopping the MQTT broker.", title="MQTT", stay=true}, Context),
+    z_session_manager:broadcast(#broadcast{type="notice", message="Stopping the MQTT broker.", title="MQTT", stay=false}, Context),
     application:stop(mqtt_broker),
     ok.
 
@@ -64,10 +64,12 @@ init(Args) ->
     AllowAnonymous = z_convert:to_bool(m_config:get_value(?MODULE, allow_anonymous, false, Context)),
     Username = z_mqtt:get_username(Context),
     Password = z_mqtt:get_password(Context),
+    Port = z_mqtt:get_port(Context),
     application:load(mqtt_broker),
     application:set_env(mqtt_broker, allow_anonymous, AllowAnonymous),
     application:set_env(mqtt_broker, username, Username),
     application:set_env(mqtt_broker, password, Password),
+    application:set_env(mqtt_broker, port, Port),
     case {AllowAnonymous, Username} of
         {false, undefined} ->
             z_session_manager:broadcast(#broadcast{type="error", message="The MQTT broker does not allow anonymous login, but there is no username configured.", title="MQTT", stay=true}, Context);

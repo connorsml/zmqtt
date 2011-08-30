@@ -17,7 +17,8 @@ start_link() -> gen_server:start_link({global, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
   ?LOG(start),
-  case gen_tcp:listen(?MQTT_PORT, [binary, {active, false}, {packet, raw}, {nodelay, true}, {keepalive, true}, {backlog, ?BACKLOG}]) of
+  {ok, Port} = application:get_env(port),
+  case gen_tcp:listen(Port, [binary, {active, false}, {packet, raw}, {nodelay, true}, {keepalive, true}, {backlog, ?BACKLOG}]) of
     {ok, ListenSocket} ->
       Pid = self(),
       spawn_link(fun() ->
