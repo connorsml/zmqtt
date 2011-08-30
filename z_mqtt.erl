@@ -52,10 +52,10 @@ connect(Context) ->
     Username = get_username(Context),
     Password = get_password(Context),
     case {AllowAnonymous, Username, Password} of
-        {true, _, _} -> mqtt_client:connect("127.0.0.1");
-        {false, Username, undefined} -> mqtt_client:connect("127.0.0.1", 1883, [{username, Username}]);
+        {true, _, _} -> mqtt_client:connect("127.0.0.1", 1883, [{client_id, z_ids:unique()}]);
+        {false, Username, undefined} -> mqtt_client:connect("127.0.0.1", 1883, [{username, Username}, {client_id, z_ids:unique()}]);
         {false, undefined, _Password} -> ?LOG("MQTT Broker username was not set.", []);
-        {false, Username, Password} -> mqtt_client:connect("127.0.0.1", 1883, [{username, Username}, {password, Password}])
+        {false, Username, Password} -> mqtt_client:connect("127.0.0.1", 1883, [{username, Username}, {password, Password}, {client_id, z_ids:unique()}])
     end.
 connect(Server, _Context) ->
     mqtt_client:connect(Server).
