@@ -47,6 +47,10 @@ terminate(_Reason, #state{context=Context}) ->
 handle_call(_Message, _FromPid, State) ->
     {reply, ok, State}.
 
+handle_cast({{m_config_update, 'mod_mqtt', _Key, _Value}, Ctx}, State) ->
+    z_session_manager:broadcast(#broadcast{type="notice", message="You have update mqtt broker config. Broker has been stopped. You will need to reactivate the module.", title="MQTT", stay=true}, Ctx),
+    application:stop(mqtt_broker),
+    {noreply, State};
 handle_cast(_Message, State) ->
     {noreply, State}.
 
@@ -77,5 +81,6 @@ init(Args) ->
             application:start(mqtt_broker),
             z_session_manager:broadcast(#broadcast{type="notice", message="The MQTT broker is running.", title="MQTT", stay=false}, Context)
     end,
+    z_notifier:observe(m_config_update, self(), Context),
     {ok, #state{context=z_context:new(Context)}}.
 
