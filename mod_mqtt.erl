@@ -18,6 +18,8 @@
 %% limitations under the License.
 
 -module(mod_mqtt).
+-behaviour(gen_server).
+
 -author("Michael Connors <michael@bring42.net>").
 
 -mod_title("MQTT Module").
@@ -29,21 +31,36 @@
 -record(state, {context, clients=[]}).
 
 %% interface functions
--export([
-    init/1, terminate/2
-]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start_link/1]).
 
 %% @spec terminate(Reason, State) -> void()
 %% @doc This function is called by a gen_server when it is about to
 %% terminate. It should be the opposite of Module:init/1 and do any necessary
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
-terminate(_Reason, Context) ->
+terminate(_Reason, #state{context=Context}) ->
     z_session_manager:broadcast(#broadcast{type="notice", message="Stopping the MQTT broker.", title="MQTT", stay=true}, Context),
     application:stop(mqtt_broker),
     ok.
 
-init(Context) ->
+handle_call(_Message, _FromPid, State) ->
+    {reply, ok, State}.
+
+handle_cast(_Message, State) ->
+    {noreply, State}.
+
+handle_info(_Message, State) ->
+    {noreply, State}.
+
+code_change(_OldVersion, State, _Extra) -> {ok, State}.
+
+start_link(Args) when is_list(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+
+init(Args) ->
+    process_flag(trap_exit, true),
+    {context, Context} = proplists:lookup(context, Args),
     AllowAnonymous = z_convert:to_bool(m_config:get_value(?MODULE, allow_anonymous, false, Context)),
     Username = z_mqtt:get_username(Context),
     Password = z_mqtt:get_password(Context),
