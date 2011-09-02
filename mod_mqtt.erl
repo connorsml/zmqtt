@@ -48,7 +48,7 @@ handle_call(_Message, _FromPid, State) ->
     {reply, ok, State}.
 
 handle_cast({{m_config_update, 'mod_mqtt', _Key, _Value}, Ctx}, State) ->
-    z_session_manager:broadcast(#broadcast{type="notice", message="You have update mqtt broker config. Broker has been stopped. You will need to reactivate the module.", title="MQTT", stay=true}, Ctx),
+    z_session_manager:broadcast(#broadcast{type="notice", message="You have updated mqtt broker config. Broker has been stopped. You will need to reactivate the module.", title="MQTT", stay=true}, Ctx),
     application:stop(mqtt_broker),
     {noreply, State};
 handle_cast(_Message, State) ->
@@ -66,20 +66,25 @@ init(Args) ->
     process_flag(trap_exit, true),
     {context, Context} = proplists:lookup(context, Args),
     AllowAnonymous = z_convert:to_bool(m_config:get_value(?MODULE, allow_anonymous, false, Context)),
-    Username = z_mqtt:get_username(Context),
-    Password = z_mqtt:get_password(Context),
-    Port = z_mqtt:get_port(Context),
-    application:load(mqtt_broker),
-    application:set_env(mqtt_broker, allow_anonymous, AllowAnonymous),
-    application:set_env(mqtt_broker, username, Username),
-    application:set_env(mqtt_broker, password, Password),
-    application:set_env(mqtt_broker, port, Port),
-    case {AllowAnonymous, Username} of
-        {false, undefined} ->
-            z_session_manager:broadcast(#broadcast{type="error", message="The MQTT broker does not allow anonymous login, but there is no username configured.", title="MQTT", stay=true}, Context);
-        _ ->
-            application:start(mqtt_broker),
-            z_session_manager:broadcast(#broadcast{type="notice", message="The MQTT broker is running.", title="MQTT", stay=false}, Context)
+    StartBroker = z_convert:to_bool(m_config:get_value(?MODULE, start_broker, false, Context)),
+    case StartBroker of 
+        true ->
+            Username = z_mqtt:get_username(Context),
+            Password = z_mqtt:get_password(Context),
+            Port = z_mqtt:get_port(Context),
+            application:load(mqtt_broker),
+            application:set_env(mqtt_broker, allow_anonymous, AllowAnonymous),
+            application:set_env(mqtt_broker, username, Username),
+            application:set_env(mqtt_broker, password, Password),
+            application:set_env(mqtt_broker, port, Port),
+            case {AllowAnonymous, Username} of
+                {false, undefined} ->
+                    z_session_manager:broadcast(#broadcast{type="error", message="The MQTT broker does not allow anonymous login, but there is no username configured.", title="MQTT", stay=true}, Context);
+                _ ->
+                    application:start(mqtt_broker),
+                    z_session_manager:broadcast(#broadcast{type="notice", message="The MQTT broker is running.", title="MQTT", stay=false}, Context)
+            end;
+	false -> z_session_manager:broadcast(#broadcast{type="notice", message="mod_mqtt is starting without a broker.", title="MQTT", stay=false}, Context)
     end,
     z_notifier:observe(m_config_update, self(), Context),
     {ok, #state{context=z_context:new(Context)}}.

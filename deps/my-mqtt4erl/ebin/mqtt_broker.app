@@ -9,7 +9,7 @@
     mqtt_registry]}, 
   {registered,[]}, 
   {applications, [kernel,stdlib]}, 
-  {env,[{username,"usernamehere"},{password,"passwordhere"},{allow_anonymous,false}]},
+  {env,[{allow_anonymous,false}]},
   {mod, {mqtt_broker_app,[]}}, 
   {start_phases, []} 
 ]}.
